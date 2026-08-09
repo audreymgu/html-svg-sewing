@@ -1,8 +1,9 @@
 {
   "name": "html-svg-sewing",
-  "type": "module"
-,  "packageManager": "yarn@4.18.0",
+  "type": "module",
+  "packageManager": "yarn@4.18.0",
   "dependencies": {
-    "@tooooools/html-to-svg": "^1.17.1"
+    "@tooooools/html-to-svg": "^1.17.1",
+    "jsdom": "^29.1.1"
   }
 }
