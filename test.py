@@ -1,4 +1,7 @@
+import sys
+import re
 import drawsvg as draw
+from svg_text2path import Text2PathConverter
 
 # pass name of file to script
 # specify drawing area
@@ -12,11 +15,29 @@ import drawsvg as draw
 # perhaps this should be a recursive function call?
 # take all text starting from > to </ (this will require additional validation even in the case where we are only evaluating tags at a single level of depth)
 
-
 document = open("test.html", "r")
 content = document.read()
-print(content)
+doctype = "<!DOCTYPE html>"
 
+if doctype not in content:
+    print("E: DOCTYPE not declared.")
+    sys.exit(1)
+
+tag_list = [("<h1>","</h1>"), ("<p>", "</p>"), ("<a>", "</a>")]
+
+text = "Hello <world>,<h1> welcome to <p><Python>."
+
+index = 0
+
+while index < len(text):
+    if text[index] == "<":
+        tag = re.split(r'(?<=[>])\s*', text[index:])[0]
+        if any(tag in tuple for tuple in tag_list):
+            print('tag found:' + tag)
+        index += len(tag)
+    else:
+        index += 1
+        
 d = draw.Drawing(400, 100, origin='top-left')
 
 
@@ -25,11 +46,16 @@ d.append(draw.Text(
     font_size=40, 
     x=20, 
     y=65, 
-    font_family='Arial, Helvetica, sans-serif', 
+    font_family='sans-serif', 
     font_weight='bold',
     fill='#2c3e50'
 ))
 
-d.save_svg('hello_world.svg')
+converter = Text2PathConverter()
+raw_svg = d.as_svg()
+flat_svg = converter.convert_string(raw_svg)
 
-print("Successfully generated 'hello_world.svg'!")
+with open("output.svg", "w", encoding="utf-8") as f:
+    f.write(flat_svg)
+
+print("Successfully generated 'output.svg!")
