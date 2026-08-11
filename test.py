@@ -25,21 +25,22 @@ if doctype not in content:
 
 tag_list = ["h1", "p", "a"]
 
-text = "Hello <world>, <p>Paolo</p> is here to <h1 class=\"test\">welcome you to the world."
+text = "Hello <world>, <p Paolo</p> is here to <h1 class=\"test\">welcome you to the world."
 
 index = 0
 buffer = ""
 
 while index < len(text):        
     open_tag = re.compile(r'(?<=<)\w+')
+    closing_caret = re.compile(r'^[^<]*>')
     if tag := open_tag.search(text, pos=index):
         name = tag.group()
         if name in tag_list:
             print('opening tag found: ' + name)
             index = tag.end()
-            if close := text.find(">", index):
+            if close := closing_caret.search(r'^[^<]*>', pos=index):
                 print(close)
-                index = close + 1
+                index = close.start() + 1
             else:
                 print("E: closing caret for opening " + name + " tag not found.")
                 sys.exit(1)                  
