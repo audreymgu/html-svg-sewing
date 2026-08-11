@@ -25,36 +25,47 @@ if doctype not in content:
 
 tag_list = ["h1", "p", "a"]
 
-text = "Hello <world>, <p Paolo</p> is here to <h1 class=\"test\">welcome you to the world."
+text = "Hello <world>, <p>Paolo</p> is here to <h1 class=\"test\">welcome <p><h1>you</h1></p> to the world.</h1>"
 
-index = 0
-buffer = ""
+<div>
+    <div>
+        <p>test</p>
+    </div>
+</div>
 
-while index < len(text):        
-    open_tag = re.compile(r'(?<=<)\w+')
-    closing_caret = re.compile(r'^[^<]*>')
-    if tag := open_tag.search(text, pos=index):
-        name = tag.group()
-        if name in tag_list:
-            print('opening tag found: ' + name)
-            index = tag.end()
-            if close := closing_caret.search(r'^[^<]*>', pos=index):
-                print(close)
-                index = close.start() + 1
+def map_dom(text):
+    index = 0
+    buffer = ""
+
+    while index < len(text):        
+        open_tag = re.compile(r'(?<=<)\w+')
+        closing_caret = re.compile(r'[^<]*>')
+        if tag := open_tag.search(text, pos=index):
+            name = tag.group()
+            if name in tag_list:
+                print('opening tag found: ' + name)
+                index = tag.end()
+                if close := closing_caret.search(text, pos=index):
+                    index = close.end()
+                else:
+                    print("E: closing caret for opening " + name + " tag not found.")
+                    sys.exit(1)
+                buffer = text[index:]
+                map_dom(buffer)                  
+                if (buf_end := text.find("</" + tag.group() + ">", index)) != -1:
+                    buffer = text[index:buf_end]
+                    print(buffer)
+                    
+                    index = buf_end + len("</" + name + ">")
+                else:
+                    print("E: closing tag for " + name + " not found.")
+                    sys.exit(1)
             else:
-                print("E: closing caret for opening " + name + " tag not found.")
-                sys.exit(1)                  
-            if (buf_end := text.find("</" + tag.group() + ">", index)) != -1:
-                buffer = text[index:buf_end]
-                print(buffer)
-                index = buf_end + len("</" + name + ">")
-            else:
-                print("E: closing tag for " + name + " not found.")
-                sys.exit(1)
+                index += len(name)
         else:
-            index += len(name)
-    else:
-        index += 1
+            index += 1
+
+map_dom(text)
 
         
 d = draw.Drawing(400, 100, origin='top-left')
