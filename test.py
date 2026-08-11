@@ -26,56 +26,64 @@ if doctype not in content:
 
 tag_list = ["h1", "p", "a"]
 
-text = "Hello <world>, <p>Paolo</p> is here to <h1>welcome</h1> you."
-        
-def map_dom(text, tag_name="none", index=0):
-    buffer = ""
+text = "Hello <world>, <p>Paolo de paolo <p>chimmichurri</p></p> is here to <h1><a>welcome</a></h1> you."
 
-    open_tag = re.compile(r'(?<=<)\w+')
-    closing_caret = re.compile(r'[^<]*>')
+open_tag = re.compile(r'(?<=<)\w+')
+close_tag = re.compile(r'(?<=\/)\w+')
+closing_caret = re.compile(r'[^<]*>')
 
-    print(index, text[index:])
+class State(Enum):
+    CUR_ADV = auto()
+    TAG_BRANCH = auto()
+    OPEN_TAG = auto()
+    OPEN_TAG_ADV = auto()
+    CLOSE_TAG = auto()
+    READ_BODY = auto()
 
-    while index < len(text):
-        # if we find an opening caret,
+state = State.CUR_ADV
+start = 0
+index = 0
+current_tag = ""
+stack = []
+
+while index < len(text):
+    if state == State.CUR_ADV:
         if text[index] == "<":
-            print(tag_name)
-            # if it's an opening tag,
-            if tag := open_tag.search(text, pos=index):
-                name = tag.group()
-                # and if the tag is recognized,
-                if name in tag_list:
-                    print('opening tag found: ' + name)
-                    # move the cursor up to the end of the name.
-                    index = tag.end()
-                    # if we find a closing caret not interrupted by another tag,
-                    if close := closing_caret.search(text, pos=index):
-                        # move the cursor upand set the starting point of our buffer to this point.
-                        start = index = close.end()
-                        # call the function recursively, passing the current index and tag name.
-                        index = map_dom(text, name, index)
-                    else:
-                        # otherwise, throw an error.
-                        print("E: closing caret for opening " + name + " tag not found.")
-                        sys.exit(1)
-                else:
-                    index += len(name)
-            # if it's a closing tag that matches the name we've been given,
-            if (end := text.find("</" + tag_name + ">", index)) != -1:
-                print("tag content: " + text[start:end])
-                # move our index past the closing tag.
-                return end + len(end)
-        # otherwise advance cursor by one.
+            state = State.TAG_BRANCH
         else:
             index += 1
-
-map_dom(text)
-
-# map_dom
-# look for first opening tag
-    # call function again with tag we're looking for and updated index
-# if we find closing tag
-    # 
+    if state == State.TAG_BRANCH:
+        index += 1
+        if text[index] == "/":
+            state = State.CLOSE_TAG
+        else:
+            state = State.OPEN_TAG
+    if state == State.OPEN_TAG:
+        if tag := open_tag.search(text, pos=index):
+            if tag.group() in tag_list:
+                current_tag = tag.group()
+                print('opening tag found: ' + current_tag)
+                index = tag.end()
+                state = State.OPEN_TAG_ADV
+            else:
+                index = tag.end()
+                state = State.CUR_ADV
+    if state == State.OPEN_TAG_ADV:
+        if close := closing_caret.search(text, pos=index):
+            index = close.end()
+            stack.append((current_tag, index))
+            state = State.CUR_ADV
+        else:
+            print("E: closing caret for opening tag not found.")
+            sys.exit(1)
+    if state == State.CLOSE_TAG:
+        if tag := close_tag.search(text, pos=index):
+            current_tag = tag.group()
+            if current_tag == stack[-1][0]:
+                print(text[stack[-1][1]:(tag.start() - 2)])
+                stack.pop()
+        index = closing_caret.search(text, pos=index).end()
+        state = State.CUR_ADV
 
         
 d = draw.Drawing(400, 100, origin='top-left')
