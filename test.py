@@ -2,6 +2,7 @@ import sys
 import re
 import drawsvg as draw
 from svg_text2path import Text2PathConverter
+from enum import Enum, auto
 
 # pass name of file to script
 # specify drawing area
@@ -25,47 +26,56 @@ if doctype not in content:
 
 tag_list = ["h1", "p", "a"]
 
-text = "Hello <world>, <p>Paolo</p> is here to <h1 class=\"test\">welcome <p><h1>you</h1></p> to the world.</h1>"
-
-<div>
-    <div>
-        <p>test</p>
-    </div>
-</div>
-
-def map_dom(text):
-    index = 0
+text = "Hello <world>, <p>Paolo</p> is here to <h1>welcome</h1> you."
+        
+def map_dom(text, tag_name="none", index=0):
     buffer = ""
 
-    while index < len(text):        
-        open_tag = re.compile(r'(?<=<)\w+')
-        closing_caret = re.compile(r'[^<]*>')
-        if tag := open_tag.search(text, pos=index):
-            name = tag.group()
-            if name in tag_list:
-                print('opening tag found: ' + name)
-                index = tag.end()
-                if close := closing_caret.search(text, pos=index):
-                    index = close.end()
+    open_tag = re.compile(r'(?<=<)\w+')
+    closing_caret = re.compile(r'[^<]*>')
+
+    print(index, text[index:])
+
+    while index < len(text):
+        # if we find an opening caret,
+        if text[index] == "<":
+            print(tag_name)
+            # if it's an opening tag,
+            if tag := open_tag.search(text, pos=index):
+                name = tag.group()
+                # and if the tag is recognized,
+                if name in tag_list:
+                    print('opening tag found: ' + name)
+                    # move the cursor up to the end of the name.
+                    index = tag.end()
+                    # if we find a closing caret not interrupted by another tag,
+                    if close := closing_caret.search(text, pos=index):
+                        # move the cursor upand set the starting point of our buffer to this point.
+                        start = index = close.end()
+                        # call the function recursively, passing the current index and tag name.
+                        index = map_dom(text, name, index)
+                    else:
+                        # otherwise, throw an error.
+                        print("E: closing caret for opening " + name + " tag not found.")
+                        sys.exit(1)
                 else:
-                    print("E: closing caret for opening " + name + " tag not found.")
-                    sys.exit(1)
-                buffer = text[index:]
-                map_dom(buffer)                  
-                if (buf_end := text.find("</" + tag.group() + ">", index)) != -1:
-                    buffer = text[index:buf_end]
-                    print(buffer)
-                    
-                    index = buf_end + len("</" + name + ">")
-                else:
-                    print("E: closing tag for " + name + " not found.")
-                    sys.exit(1)
-            else:
-                index += len(name)
+                    index += len(name)
+            # if it's a closing tag that matches the name we've been given,
+            if (end := text.find("</" + tag_name + ">", index)) != -1:
+                print("tag content: " + text[start:end])
+                # move our index past the closing tag.
+                return end + len(end)
+        # otherwise advance cursor by one.
         else:
             index += 1
 
 map_dom(text)
+
+# map_dom
+# look for first opening tag
+    # call function again with tag we're looking for and updated index
+# if we find closing tag
+    # 
 
         
 d = draw.Drawing(400, 100, origin='top-left')
