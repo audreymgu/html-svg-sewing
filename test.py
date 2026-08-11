@@ -23,20 +23,39 @@ if doctype not in content:
     print("E: DOCTYPE not declared.")
     sys.exit(1)
 
-tag_list = [("<h1>","</h1>"), ("<p>", "</p>"), ("<a>", "</a>")]
+tag_list = ["h1", "p", "a"]
 
-text = "Hello <world>,<h1> welcome to <p><Python>."
+text = "Hello <world>, <p>Paolo</p> is here to <h1 class=\"test\">welcome you to the world</h1>."
 
 index = 0
+buffer = ""
+capture = False
 
-while index < len(text):
-    if text[index] == "<":
-        tag = re.split(r'(?<=[>])\s*', text[index:])[0]
-        if any(tag in tuple for tuple in tag_list):
-            print('tag found:' + tag)
-        index += len(tag)
+while index < len(text):        
+    open_tag = re.compile(r'(?<=<)\w+')
+    if tag := open_tag.search(text, pos=index):
+        name = tag.group()
+        if name in tag_list:
+            print('opening tag found: ' + name)
+            index = tag.end()
+            if close := text.find(">", index):
+                print(close)
+                index = close + 1
+            else:
+                print("E: closing caret for opening " + tag.group() + " tag not found.")
+                sys.exit(1)                  
+            if buf_end := text.find("</" + tag.group() + ">", index):
+                buffer = text[index:buf_end]
+                print(buffer)
+                index = buf_end + len("</" + tag.group() + ">")
+            else:
+                print("E: closing tag for " + tag.group() + " not found.")
+                sys.exit(1)
+        else:
+            index += len(name)
     else:
         index += 1
+
         
 d = draw.Drawing(400, 100, origin='top-left')
 
